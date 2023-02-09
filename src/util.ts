@@ -20,6 +20,7 @@ export function updateScroll(
 	}
 	window.scrollTo(0, scrollElement.scrollHeight);
 	scrollElement.scrollTo(-scrollElement.scrollWidth, 0);
+}
 
 export function toTimeString(s: number) {
 	const hours = Math.floor(s / 3600);
