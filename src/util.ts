@@ -33,6 +33,7 @@ export function toTimeString(s: number) {
 export function timeStringToSeconds(timeString: string) {
 	const [hours, minutes, seconds] = timeString.split(':').map((part) => Number.parseInt(part, 10));
 
+	
 	return hours * 60 * 60 + minutes * 60 + seconds;
 }
 
