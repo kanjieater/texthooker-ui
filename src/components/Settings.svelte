@@ -56,7 +56,7 @@
 	export let selectedLineIds: string[];
 	export let settingsOpen: boolean;
 	export let settingsElement: SVGElement;
-
+	
 	let fileInput: HTMLInputElement;
 	let clipboardMutationObserver: MutationObserver | undefined;
 
@@ -171,23 +171,25 @@
 	}
 
 	async function handleReset(linesOnly: boolean) {
-		const { canceled } = await new Promise<DialogResult>((resolve) => {
-			$openDialog$ = {
-				icon: mdiHelpCircle,
-				message: linesOnly
-					? 'All displayed and stored Lines will be cleared'
-					: 'Clear stored Lines + set Timer to 00:00:00',
-				callback: resolve,
-			};
-		});
+		// const { canceled } = await new Promise<DialogResult>((resolve) => {
+		// 	$openDialog$ = {
+		// 		icon: mdiHelpCircle,
+		// 		message: linesOnly
+		// 			? 'All displayed and stored Lines will be cleared'
+		// 			: 'Clear stored Lines + set Timer to 00:00:00',
+		// 		callback: resolve,
+		// 	};
+		// });
 
-		if (canceled) {
-			return;
-		}
+		// if (canceled) {
+		// 	return;
+		// }
 
 		$lineData$ = [];
 		selectedLineIds = [];
 		window.localStorage.removeItem('bannou-texthooker-lineData');
+		// window.localStorage.removeItem('bannou-texthooker-persistLines');
+		// lineData$.next([]);
 
 		if (!linesOnly) {
 			$timeValue$ = 0;

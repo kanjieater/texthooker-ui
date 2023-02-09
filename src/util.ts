@@ -18,19 +18,8 @@ export function updateScroll(
 	if (!scrollElement) {
 		return;
 	}
-
-	if (reverseLineOrder) {
-		if (displayVertical) {
-			scrollElement.scrollTo(scrollElement.scrollWidth, 0);
-		} else {
-			window.scrollTo(0, -scrollElement.scrollHeight);
-		}
-	} else if (displayVertical) {
-		scrollElement.scrollTo(-scrollElement.scrollWidth, 0);
-	} else {
-		window.scrollTo(0, scrollElement.scrollHeight);
-	}
-}
+	window.scrollTo(0, scrollElement.scrollHeight);
+	scrollElement.scrollTo(-scrollElement.scrollWidth, 0);
 
 export function toTimeString(s: number) {
 	const hours = Math.floor(s / 3600);

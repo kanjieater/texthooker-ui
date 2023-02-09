@@ -177,7 +177,11 @@
 	}
 
 	function executeUpdateScroll() {
-		updateScroll(window, lineContainer, $reverseLineOrder$, $displayVertical$);
+		const callScroll = () => {
+			updateScroll(window, lineContainer, $reverseLineOrder$, $displayVertical$);
+		};
+		addEventListener("resize", callScroll);
+		addEventListener("load", callScroll);
 	}
 
 	function handleMissedLine() {
@@ -245,16 +249,16 @@
 			<Icon path={mdiPause} on:click={() => ($isPaused$ = true)} />
 		</div>
 	{/if}
-	{#if $actionHistory$.length}
-		<div role="button" title="Undo last Action" class="mr-2 hover:text-primary">
-			<Icon path={mdiArrowULeftTop} on:click={undoLastAction} />
-		</div>
-	{/if}
-	{#if $lineData$.length}
+	<!-- {#if $actionHistory$.length} -->
+	<div role="button" title="Undo last Action" class="mr-2 hover:text-primary">
+		<Icon path={mdiArrowULeftTop} on:click={undoLastAction} />
+	</div>
+	<!-- {/if} -->
+	<!-- {#if $lineData$.length} -->
 		<div role="button" title="Delete last Line" class="mr-2 hover:text-primary">
 			<Icon path={mdiDeleteForever} on:click={removeLastLine} />
 		</div>
-	{/if}
+	<!-- {/if} -->
 	{#if selectedLineIds.length}
 		<div role="button" title="Remove selected Lines" class="mr-2 hover:text-primary">
 			<Icon path={mdiDelete} on:click={removeLines} />
@@ -263,9 +267,21 @@
 			<Icon path={mdiCancel} on:click={deselectLines} />
 		</div>
 	{/if}
-	<div role="button" title="Open Notes" class="mr-2 hover:text-primary">
+	<!-- <div role="button" title="Open Notes" class="mr-2 hover:text-primary">
 		<Icon path={mdiNoteEdit} on:click={() => ($notesOpen$ = true)} />
-	</div>
+	</div> -->
+	<div
+		role="button"
+		class="cursor-pointer mr-2 hover:text-primary text-red-500"
+		on:dblclick={() =>  {
+			$lineData$ = [];
+			selectedLineIds = [];
+			window.localStorage.removeItem('bannou-texthooker-lineData');
+		}}
+		on:keyup={()=>{}}
+	>
+	<Icon path={mdiDelete} />
+</div>
 	<Icon
 		path={mdiCog}
 		class="cursor-pointer mr-2 hover:text-primary"

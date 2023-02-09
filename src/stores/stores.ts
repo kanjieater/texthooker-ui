@@ -160,7 +160,7 @@ export const actionHistory$ = writeableArraySubject<LineItem[]>()(
 
 export const flashOnPauseTimeout$ = writable<number>(undefined);
 
-export const isPaused$ = writableSubject<boolean>(true);
+export const isPaused$ = writableSubject<boolean>(false);
 
 export const newLine$ = new Subject<string>();
 
