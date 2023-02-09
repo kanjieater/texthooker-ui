@@ -1,12 +1,15 @@
-import { newLine$, socketState$, websocketUrl$ } from './stores/stores';
+import { newLine$ } from './stores/stores';
 
 export class SocketConnection {
-	private websocketUrl: string;
+	public websocketUrl: string;
 
 	private socket: WebSocket | undefined;
-
-	constructor() {
-		websocketUrl$.subscribe((websocketUrl) => (this.websocketUrl = websocketUrl));
+	private socketState$;
+	
+	constructor(webSocketUrl,socketState$) {
+		this.websocketUrl = webSocketUrl;
+		this.socketState$ = writableSubject<number>(-1);
+		// $websocketUrl$.subscribe((websocketUrl) => (this.websocketUrl = websocketUrl));
 	}
 
 	connect() {

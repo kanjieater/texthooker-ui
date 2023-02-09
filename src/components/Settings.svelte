@@ -45,7 +45,8 @@
 		theme$,
 		timeValue$,
 		userNotes$,
-		websocketUrl$,
+		websocketUrl1$,
+		websocketUrl2$,
 		windowTitle$
 	} from '../stores/stores';
 	import { OnlineFont, Theme, type DialogResult } from '../types';
@@ -486,8 +487,10 @@
 		</div>
 		<span class="label-text col-span-2">Window Title</span>
 		<input class="input input-bordered h-8 col-span-2" bind:value={$windowTitle$} />
-		<span class="label-text col-span-2">Websocket</span>
-		<input class="input input-bordered h-8 col-span-2" bind:value={$websocketUrl$} />
+		<span class="label-text col-span-2">Websocket1</span>
+		<input class="input input-bordered h-8 col-span-2" bind:value={$websocketUrl1$} />
+		<span class="label-text col-span-2">Websocket2</span>
+		<input class="input input-bordered h-8 col-span-2" bind:value={$websocketUrl2$} />
 		<span class="label-text col-span-2">Font Size</span>
 		<input
 			type="number"

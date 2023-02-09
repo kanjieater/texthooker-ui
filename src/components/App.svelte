@@ -24,7 +24,8 @@
 		removeAllWhitespace$,
 		reverseLineOrder$,
 		theme$,
-		websocketUrl$
+		websocketUrl1$,
+		websocketUrl2$
 	} from '../stores/stores';
 	import { OnlineFont, Theme, type LineItem } from '../types';
 	import { generateRandomUUID, newLineCharacter, reduceToEmptyString, updateScroll } from '../util';
@@ -229,8 +230,11 @@
 
 <header class="fixed top-0 right-0 flex justify-end items-center p-2 bg-base-100" bind:this={settingsContainer}>
 	<Stats />
-	{#if $websocketUrl$}
-		<SocketConnector />
+	{#if $websocketUrl1$}
+		<SocketConnector bind:websocketUrl={$websocketUrl1$} />
+	{/if}
+	{#if $websocketUrl2$}
+		<SocketConnector bind:websocketUrl={$websocketUrl2$} />
 	{/if}
 	{#if $isPaused$}
 		<div

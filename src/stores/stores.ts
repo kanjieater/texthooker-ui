@@ -12,7 +12,8 @@ import { writableSubject } from './transformer/writeable-subject';
 const defaultSettings = {
 	theme$: Theme.BUSINESS,
 	windowTitle$: '',
-	websocketUrl$: 'ws://localhost:6677',
+	websocketUrl1$: 'ws://localhost:6677',
+	websocketUrl2$: 'ws://localhost:9001',
 	fontSize$: 24,
 	onlineFont$: OnlineFont.OFF,
 	afkTimer$: 0,
@@ -44,7 +45,8 @@ export const theme$ = writableStringSubject()('bannou-texthooker-theme', default
 
 export const windowTitle$ = writableStringSubject()('bannou-texthooker-windowTitle', defaultSettings.windowTitle$);
 
-export const websocketUrl$ = writableStringSubject()('bannou-texthooker-websocketUrl', defaultSettings.websocketUrl$);
+export const websocketUrl1$ = writableStringSubject()('bannou-texthooker-websocketUrl1', defaultSettings.websocketUrl1$);
+export const websocketUrl2$ = writableStringSubject()('bannou-texthooker-websocketUrl2', defaultSettings.websocketUrl2$);
 
 export const fontSize$ = writableNumberSubject()('bannou-texthooker-fontSize', defaultSettings.fontSize$);
 
@@ -144,7 +146,8 @@ export const notesOpen$ = writableSubject<boolean>(false);
 
 export const userNotes$ = writableStringSubject()('bannou-texthooker-userNotes', '', persistNotes$);
 
-export const socketState$ = writableSubject<number>(-1);
+export const socketState1$ = writableSubject<number>(-1);
+export const socketState2$ = writableSubject<number>(-1);
 
 export const openDialog$ = writableSubject<Record<string, any>>(undefined);
 
@@ -188,7 +191,8 @@ export async function resetAllData() {
 
 		theme$.next(defaultSettings.theme$);
 		windowTitle$.next(defaultSettings.windowTitle$);
-		websocketUrl$.next(defaultSettings.websocketUrl$);
+		websocketUrl1$.next(defaultSettings.websocketUrl1$);
+		websocketUrl2$.next(defaultSettings.websocketUrl2$);
 		fontSize$.next(defaultSettings.fontSize$);
 		onlineFont$.next(defaultSettings.onlineFont$);
 		afkTimer$.next(defaultSettings.afkTimer$);

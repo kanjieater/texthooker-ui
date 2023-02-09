@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { mdiConnection } from '@mdi/js';
+	import type { BehaviorSubject } from 'rxjs';
 	import { onMount } from 'svelte';
 	import { SocketConnection } from '../socket';
-	import { isPaused$, openDialog$, socketState$, websocketUrl$ } from '../stores/stores';
+	import { isPaused$, openDialog$, socketState$} from '../stores/stores';
 	import Icon from './Icon.svelte';
+
+	export let websocketUrl: string;
 
 	let socketConnection: SocketConnection | undefined;
 	let intitialAttemptDone = false;
@@ -52,7 +55,7 @@
 	});
 
 	function updateConnectedWithLabel(hasConnection: boolean) {
-		return hasConnection ? `Connected with ${$websocketUrl$}` : 'Not Connected';
+		return hasConnection ? `Connected with ${socketConnection.websocketUrl}` : 'Not Connected';
 	}
 
 	async function toggleSocket() {
@@ -60,7 +63,7 @@
 			closeRequested = true;
 			socketConnection.disconnect();
 		} else {
-			socketConnection = socketConnection || new SocketConnection();
+			socketConnection = socketConnection || new SocketConnection(websocketUrl);
 			socketConnection.connect();
 		}
 	}
