@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { mdiCancel, mdiCog, mdiDelete, mdiDeleteForever, mdiNoteEdit, mdiPause, mdiPlay, mdiArrowULeftTop } from '@mdi/js';
+	import { mdiCancel, mdiCog, mdiDelete, mdiCloseCircle, mdiNoteEdit, mdiPause, mdiPlay, mdiArrowULeftTop } from '@mdi/js';
 	import { filter, fromEvent, map, NEVER, switchMap, tap } from 'rxjs';
 	import { onMount } from 'svelte';
 	import { quintInOut } from 'svelte/easing';
@@ -182,6 +182,7 @@
 		};
 		addEventListener("resize", callScroll);
 		addEventListener("load", callScroll);
+		callScroll();
 	}
 
 	function handleMissedLine() {
@@ -236,7 +237,7 @@
 	{#if $websocketUrl$}
 		<SocketConnector />
 	{/if}
-	{#if $isPaused$}
+	<!-- {#if $isPaused$}
 		<div
 			role="button"
 			title="Continue"
@@ -248,16 +249,17 @@
 		<div role="button" title="Pause" class="mr-2 hover:text-primary">
 			<Icon path={mdiPause} on:click={() => ($isPaused$ = true)} />
 		</div>
-	{/if}
+	{/if} -->
 	<!-- {#if $actionHistory$.length} -->
+	<div role="button" title="Delete last Line" class="mr-2 hover:text-primary">
+		<Icon path={mdiCloseCircle} on:click={removeLastLine} />
+	</div>
 	<div role="button" title="Undo last Action" class="mr-2 hover:text-primary">
 		<Icon path={mdiArrowULeftTop} on:click={undoLastAction} />
 	</div>
 	<!-- {/if} -->
 	<!-- {#if $lineData$.length} -->
-		<div role="button" title="Delete last Line" class="mr-2 hover:text-primary">
-			<Icon path={mdiDeleteForever} on:click={removeLastLine} />
-		</div>
+
 	<!-- {/if} -->
 	{#if selectedLineIds.length}
 		<div role="button" title="Remove selected Lines" class="mr-2 hover:text-primary">

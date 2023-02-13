@@ -56,7 +56,6 @@
 	export let selectedLineIds: string[];
 	export let settingsOpen: boolean;
 	export let settingsElement: SVGElement;
-	
 	let fileInput: HTMLInputElement;
 	let clipboardMutationObserver: MutationObserver | undefined;
 
@@ -88,8 +87,8 @@
 
 			for (let index2 = 0, { length: length2 } = addedNodes; index2 < length2; index2 += 1) {
 				const addedNode = addedNodes[index] as HTMLElement;
-
-				if (addedNode.tagName === 'P') {
+				// addedNode can become undefined if the element disappears like yomichan
+				if (addedNode?.tagName === 'P') {
 					newLine$.next(addedNode.textContent);
 					addedNode.remove();
 				}
