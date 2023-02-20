@@ -9,6 +9,7 @@
 	} from '../stores/stores';
 	import type { LineItem } from '../types';
 	import { dummyFn, newLineCharacter, updateScroll } from '../util';
+	import { fly } from 'svelte/transition';
 
 	export let line: LineItem;
 	export let index: number;
@@ -101,6 +102,7 @@
 		on:dblclick={handleDblClick}
 		on:keyup={dummyFn}
 		bind:this={paragraph}
+		in:fly="{{x:-100, duration:300}}"
 	>
 		{line.text}
 	</p>

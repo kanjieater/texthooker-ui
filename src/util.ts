@@ -18,8 +18,16 @@ export function updateScroll(
 	if (!scrollElement) {
 		return;
 	}
-	window.scrollTo(0, scrollElement.scrollHeight);
-	scrollElement.scrollTo(-scrollElement.scrollWidth, 0);
+	window.scrollTo({
+		top: scrollElement.scrollHeight,
+		left: 0,
+		behavior: "smooth"
+	});
+	scrollElement.scrollTo({
+		top: 0,
+		left:-scrollElement.scrollWidth,
+		behavior: "smooth"
+	});
 }
 
 export function toTimeString(s: number) {
