@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { mdiCancel, mdiCog, mdiDelete, mdiCloseCircle, mdiNoteEdit, mdiPause, mdiPlay, mdiArrowULeftTop } from '@mdi/js';
+	import {
+		mdiArrowULeftTop,
+		mdiCancel,
+		mdiCog,
+		mdiCloseCircle,
+		mdiDelete,
+		mdiDeleteForever,
+		mdiNoteEdit,
+		mdiPause,
+		mdiPlay
+	} from '@mdi/js';
 	import { filter, fromEvent, map, NEVER, switchMap, tap } from 'rxjs';
 	import { onMount } from 'svelte';
 	import { quintInOut } from 'svelte/easing';
@@ -7,7 +17,9 @@
 	import {
 		actionHistory$,
 		allowNewLineDuringPause$,
+		allowPasteDuringPause$,
 		autoStartTimerDuringPause$,
+		autoStartTimerDuringPausePaste$,
 		dialogOpen$,
 		displayVertical$,
 		enablePaste$,
@@ -26,7 +38,7 @@
 		theme$,
 		websocketUrl$
 	} from '../stores/stores';
-	import { OnlineFont, Theme, type LineItem } from '../types';
+	import { LineType, OnlineFont, Theme, type LineItem } from '../types';
 	import { generateRandomUUID, newLineCharacter, reduceToEmptyString, updateScroll } from '../util';
 	import DialogManager from './DialogManager.svelte';
 	import Icon from './Icon.svelte';
@@ -43,6 +55,9 @@
 	let lineContainer: HTMLElement;
 	let lineElements: Line[] = [];
 	let lineInEdit = false;
+	let wakeLock = null;
+
+	const wakeLockAvailable = 'wakeLock' in navigator;
 
 	const uniqueLines$ = preventGlobalDuplicate$.pipe(
 		map((preventGlobalDuplicate) =>
@@ -51,11 +66,20 @@
 	);
 
 	const handleLine$ = newLine$.pipe(
-		filter(() => {
-			const hasNoUserInteraction = !$notesOpen$ && !$dialogOpen$ && !settingsOpen && !lineInEdit;
+		filter(([_, lineType]) => {
+			const isPaste = lineType === LineType.PASTE;
+			const hasNoUserInteraction = !isPaste || (!$notesOpen$ && !$dialogOpen$ && !settingsOpen && !lineInEdit);
 
-			if ((!$isPaused$ || $allowNewLineDuringPause$ || $autoStartTimerDuringPause$) && hasNoUserInteraction) {
-				if ($isPaused$ && $autoStartTimerDuringPause$) {
+			if (
+				(!$isPaused$ ||
+					(($allowPasteDuringPause$ || $autoStartTimerDuringPausePaste$) && isPaste) ||
+					(($allowNewLineDuringPause$ || $autoStartTimerDuringPause$) && !isPaste)) &&
+				hasNoUserInteraction
+			) {
+				if (
+					$isPaused$ &&
+					(($autoStartTimerDuringPausePaste$ && isPaste) || ($autoStartTimerDuringPause$ && !isPaste))
+				) {
 					$isPaused$ = false;
 				}
 
@@ -68,8 +92,9 @@
 
 			return false;
 		}),
-		tap((newLine: string) => {
-			const text = transformLine(newLine);
+		tap((newLine: [string, string]) => {
+			const [lineContent] = newLine;
+			const text = transformLine(lineContent);
 
 			if (text) {
 				$lineData$ = [...$lineData$, { id: generateRandomUUID(), text }];
@@ -80,11 +105,42 @@
 
 	const pastHandler$ = enablePaste$.pipe(
 		switchMap((enablePaste) => (enablePaste ? fromEvent(document, 'paste') : NEVER)),
-		tap((event: ClipboardEvent) => newLine$.next(event.clipboardData.getData('text/plain'))),
+		tap((event: ClipboardEvent) => newLine$.next([event.clipboardData.getData('text/plain'), LineType.PASTE])),
 		reduceToEmptyString()
 	);
 
-	onMount(executeUpdateScroll);
+	const visibilityHandler$ = fromEvent(document, 'visibilitychange').pipe(
+		tap(() => {
+			if (wakeLockAvailable && wakeLock !== null && document.visibilityState === 'visible') {
+				wakeLock = navigator.wakeLock
+					.request('screen')
+					.then((lock) => {
+						return lock;
+					})
+					.catch((error) => {
+						console.error(`Unable to aquire screen lock: ${error.message}`);
+						return null;
+					});
+			}
+		}),
+		reduceToEmptyString()
+	);
+
+	onMount(() => {
+		executeUpdateScroll();
+
+		if (wakeLockAvailable) {
+			wakeLock = navigator.wakeLock
+				.request('screen')
+				.then((lock) => {
+					return lock;
+				})
+				.catch((error) => {
+					console.error(`Unable to aquire screen lock: ${error.message}`);
+					return null;
+				});
+		}
+	});
 
 	function handleKeyPress(event: KeyboardEvent) {
 		if (event.key === 'Delete') {
@@ -218,7 +274,7 @@
 			canAppend = !$uniqueLines$.has(lineToAppend);
 			$uniqueLines$.add(lineToAppend);
 		} else if ($preventLastDuplicate$ && $lineData$.length) {
-			canAppend = lineToAppend !== $lineData$[$lineData$.length - 1].text;
+			canAppend = $lineData$.slice(-$preventLastDuplicate$).every((line) => line.text !== lineToAppend);
 		}
 
 		return canAppend ? lineToAppend : undefined;
@@ -227,6 +283,7 @@
 
 <svelte:window on:keyup={handleKeyPress} />
 
+{$visibilityHandler$ ?? ''}
 {$handleLine$ ?? ''}
 {$pastHandler$ ?? ''}
 

@@ -1,5 +1,16 @@
 <script lang="ts">
-	import { combineLatest, debounceTime, fromEvent, interval, merge, NEVER, switchMap, tap, throttleTime } from 'rxjs';
+	import {
+		combineLatest,
+		debounceTime,
+		fromEvent,
+		interval,
+		merge,
+		NEVER,
+		startWith,
+		switchMap,
+		tap,
+		throttleTime
+	} from 'rxjs';
 	import {
 		adjustTimerOnAfk$,
 		afkTimer$,
@@ -15,11 +26,24 @@
 	} from '../stores/stores';
 	import { reduceToEmptyString, toTimeString } from '../util';
 
+	let lastTick = 0;
+	let idleTime = 0;
+
 	const isNotJapaneseRegex = /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
 
 	const timer$ = isPaused$.pipe(
-		switchMap((isPaused) => (isPaused ? NEVER : interval(1000))),
-		tap(() => ($timeValue$ = $timeValue$ + 1)),
+		switchMap((isPaused) => {
+			if (isPaused) {
+				idleTime = 0;
+
+				return NEVER;
+			}
+
+			lastTick = performance.now();
+
+			return interval(1000);
+		}),
+		tap(updateElapsedTime),
 		reduceToEmptyString()
 	);
 
@@ -31,15 +55,13 @@
 						newLine$,
 						fromEvent<PointerEvent>(window, 'pointermove'),
 						fromEvent<Event>(document, 'selectionchange')
-				  ).pipe(throttleTime(500), debounceTime($afkTimer$ * 1000))
+				  ).pipe(
+						startWith(true),
+						throttleTime(1000),
+						tap(() => (idleTime = performance.now() + $afkTimer$ * 1000)),
+						debounceTime($afkTimer$ * 1000)
+				  )
 		),
-		tap(() => {
-			$isPaused$ = true;
-
-			if ($adjustTimerOnAfk$) {
-				$timeValue$ = Math.max(0, $timeValue$ - $afkTimer$ + 1);
-			}
-		}),
 		reduceToEmptyString()
 	);
 
@@ -70,6 +92,24 @@
 
 		if (selection?.toString() && selection.getRangeAt(0).intersectsNode(timerElm)) {
 			selection.removeAllRanges();
+		}
+	}
+
+	function updateElapsedTime() {
+		const now = idleTime ? Math.min(idleTime, performance.now()) : performance.now();
+		const elapsed = Math.round((now - lastTick + Number.EPSILON) / 1000);
+
+		if (idleTime && now >= idleTime) {
+			$isPaused$ = true;
+
+			if ($adjustTimerOnAfk$) {
+				$timeValue$ = Math.max(0, $timeValue$ + elapsed - $afkTimer$);
+			} else {
+				$timeValue$ += elapsed;
+			}
+		} else {
+			lastTick = now;
+			$timeValue$ += elapsed;
 		}
 	}
 

@@ -1,4 +1,4 @@
-import { OnlineFont, Theme, type DialogResult, type LineItem } from './../types';
+import { LineType, OnlineFont, Theme, type DialogResult, type LineItem } from './../types';
 
 import { mdiHelpCircle } from '@mdi/js';
 import { Subject } from 'rxjs';
@@ -15,6 +15,7 @@ const defaultSettings = {
 	websocketUrl$: 'ws://localhost:6677',
 	fontSize$: 24,
 	onlineFont$: OnlineFont.OFF,
+	preventLastDuplicate$: 0,
 	afkTimer$: 0,
 	adjustTimerOnAfk$: false,
 	enableExternalClipboardMonitor$: false,
@@ -23,10 +24,12 @@ const defaultSettings = {
 	persistLines$: true,
 	persistActionHistory$: false,
 	enablePaste$: false,
-	flashOnMissedLine$: true,
+	blockCopyOnPage$: false,
+	allowPasteDuringPause$: false,
 	allowNewLineDuringPause$: false,
+	autoStartTimerDuringPausePaste$: false,
 	autoStartTimerDuringPause$: false,
-	preventLastDuplicate$: false,
+	flashOnMissedLine$: true,
 	preventGlobalDuplicate$: false,
 	displayVertical$: false,
 	reverseLineOrder$: false,
@@ -37,6 +40,7 @@ const defaultSettings = {
 	showCharacterCount$: true,
 	showLineCount$: true,
 	blurStats$: false,
+	enableLineAnimation$: false,
 	customCSS$: '',
 };
 
@@ -49,6 +53,11 @@ export const websocketUrl$ = writableStringSubject()('bannou-texthooker-websocke
 export const fontSize$ = writableNumberSubject()('bannou-texthooker-fontSize', defaultSettings.fontSize$);
 
 export const onlineFont$ = writableStringSubject()('bannou-texthooker-onlineFont', defaultSettings.onlineFont$);
+
+export const preventLastDuplicate$ = writableNumberSubject()(
+	'bannou-texthooker-preventLastDuplicate',
+	defaultSettings.preventLastDuplicate$
+);
 
 export const afkTimer$ = writableNumberSubject()('bannou-texthooker-afkTimer', defaultSettings.afkTimer$);
 
@@ -75,9 +84,14 @@ export const persistActionHistory$ = writableBooleanSubject()(
 
 export const enablePaste$ = writableBooleanSubject()('bannou-texthooker-enablePaste', defaultSettings.enablePaste$);
 
-export const flashOnMissedLine$ = writableBooleanSubject()(
-	'bannou-texthooker-flashOnMissedLine',
-	defaultSettings.flashOnMissedLine$
+export const blockCopyOnPage$ = writableBooleanSubject()(
+	'bannou-texthooker-blockCopyOnPage',
+	defaultSettings.blockCopyOnPage$
+);
+
+export const allowPasteDuringPause$ = writableBooleanSubject()(
+	'bannou-texthooker-allowPasteDuringPause',
+	defaultSettings.allowPasteDuringPause$
 );
 
 export const allowNewLineDuringPause$ = writableBooleanSubject()(
@@ -85,14 +99,19 @@ export const allowNewLineDuringPause$ = writableBooleanSubject()(
 	defaultSettings.allowNewLineDuringPause$
 );
 
+export const autoStartTimerDuringPausePaste$ = writableBooleanSubject()(
+	'bannou-texthooker-autoStartTimerDuringPausePaste',
+	defaultSettings.autoStartTimerDuringPausePaste$
+);
+
 export const autoStartTimerDuringPause$ = writableBooleanSubject()(
 	'bannou-texthooker-autoStartTimerDuringPause',
 	defaultSettings.autoStartTimerDuringPause$
 );
 
-export const preventLastDuplicate$ = writableBooleanSubject()(
-	'bannou-texthooker-preventLastDuplicate',
-	defaultSettings.preventLastDuplicate$
+export const flashOnMissedLine$ = writableBooleanSubject()(
+	'bannou-texthooker-flashOnMissedLine',
+	defaultSettings.flashOnMissedLine$
 );
 
 export const preventGlobalDuplicate$ = writableBooleanSubject()(
@@ -136,6 +155,11 @@ export const showLineCount$ = writableBooleanSubject()(
 
 export const blurStats$ = writableBooleanSubject()('bannou-texthooker-blurStats', defaultSettings.blurStats$);
 
+export const enableLineAnimation$ = writableBooleanSubject()(
+	'bannou-texthooker-enableLineAnimation',
+	defaultSettings.enableLineAnimation$
+);
+
 export const customCSS$ = writableStringSubject()('bannou-texthooker-customCSS', defaultSettings.customCSS$);
 
 export const timeValue$ = writableNumberSubject()('bannou-texthooker-timeValue', 0, persistStats$);
@@ -162,7 +186,7 @@ export const flashOnPauseTimeout$ = writable<number>(undefined);
 
 export const isPaused$ = writableSubject<boolean>(false);
 
-export const newLine$ = new Subject<string>();
+export const newLine$ = new Subject<[string, LineType]>();
 
 export async function resetAllData() {
 	const { canceled } = await new Promise<DialogResult>((resolve) => {
@@ -191,6 +215,7 @@ export async function resetAllData() {
 		websocketUrl$.next(defaultSettings.websocketUrl$);
 		fontSize$.next(defaultSettings.fontSize$);
 		onlineFont$.next(defaultSettings.onlineFont$);
+		preventLastDuplicate$.next(defaultSettings.preventLastDuplicate$);
 		afkTimer$.next(defaultSettings.afkTimer$);
 		adjustTimerOnAfk$.next(defaultSettings.adjustTimerOnAfk$);
 		enableExternalClipboardMonitor$.next(defaultSettings.enableExternalClipboardMonitor$);
@@ -199,10 +224,12 @@ export async function resetAllData() {
 		persistLines$.next(defaultSettings.persistLines$);
 		persistActionHistory$.next(defaultSettings.persistActionHistory$);
 		enablePaste$.next(defaultSettings.enablePaste$);
-		flashOnMissedLine$.next(defaultSettings.flashOnMissedLine$);
+		blockCopyOnPage$.next(defaultSettings.blockCopyOnPage$);
+		allowPasteDuringPause$.next(defaultSettings.allowPasteDuringPause$);
 		allowNewLineDuringPause$.next(defaultSettings.allowNewLineDuringPause$);
+		autoStartTimerDuringPausePaste$.next(defaultSettings.autoStartTimerDuringPausePaste$);
 		autoStartTimerDuringPause$.next(defaultSettings.autoStartTimerDuringPause$);
-		preventLastDuplicate$.next(defaultSettings.preventLastDuplicate$);
+		flashOnMissedLine$.next(defaultSettings.flashOnMissedLine$);
 		preventGlobalDuplicate$.next(defaultSettings.preventGlobalDuplicate$);
 		displayVertical$.next(defaultSettings.displayVertical$);
 		reverseLineOrder$.next(defaultSettings.reverseLineOrder$);
@@ -213,6 +240,7 @@ export async function resetAllData() {
 		showCharacterCount$.next(defaultSettings.showCharacterCount$);
 		showLineCount$.next(defaultSettings.showLineCount$);
 		blurStats$.next(defaultSettings.blurStats$);
+		enableLineAnimation$.next(defaultSettings.enableLineAnimation$);
 		customCSS$.next(defaultSettings.customCSS$);
 	}
 }

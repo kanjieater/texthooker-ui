@@ -13,7 +13,8 @@ export function updateScroll(
 	window: Window,
 	scrollElement: HTMLElement,
 	reverseLineOrder: boolean,
-	displayVertical: boolean
+	displayVertical: boolean,
+	behavior: ScrollBehavior = 'auto'
 ) {
 	if (!scrollElement) {
 		return;
@@ -27,6 +28,7 @@ export function updateScroll(
 		top: 0,
 		left:-scrollElement.scrollWidth,
 		behavior: "smooth"
+
 	});
 }
 

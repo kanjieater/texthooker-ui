@@ -9,18 +9,23 @@
 		mdiWeatherNight,
 		mdiWhiteBalanceSunny
 	} from '@mdi/js';
+	import { fromEvent, NEVER, switchMap, tap } from 'rxjs';
 	import { createEventDispatcher, tick } from 'svelte';
 	import {
 		actionHistory$,
 		adjustTimerOnAfk$,
 		afkTimer$,
 		allowNewLineDuringPause$,
+		allowPasteDuringPause$,
 		autoStartTimerDuringPause$,
+		autoStartTimerDuringPausePaste$,
+		blockCopyOnPage$,
 		blurStats$,
 		customCSS$,
 		dialogOpen$,
 		displayVertical$,
 		enableExternalClipboardMonitor$,
+		enableLineAnimation$,
 		enablePaste$,
 		flashOnMissedLine$,
 		fontSize$,
@@ -48,9 +53,9 @@
 		websocketUrl$,
 		windowTitle$
 	} from '../stores/stores';
-	import { OnlineFont, Theme, type DialogResult } from '../types';
+	import { LineType, OnlineFont, Theme, type DialogResult, type LineItem } from '../types';
 	import { clickOutside } from '../use-click-outside';
-	import { dummyFn, timeStringToSeconds } from '../util';
+	import { dummyFn, reduceToEmptyString, timeStringToSeconds } from '../util';
 	import Icon from './Icon.svelte';
 
 	export let selectedLineIds: string[];
@@ -62,6 +67,14 @@
 	const dispatch = createEventDispatcher<{ layoutChange: void }>();
 
 	const onlineFonts = [OnlineFont.OFF, OnlineFont.NOTO, OnlineFont.KLEE, OnlineFont.SHIPPORI];
+
+	const copyBlocker$ = blockCopyOnPage$.pipe(
+		switchMap((blockCopyOnPage) => (blockCopyOnPage ? fromEvent(document, 'copy') : NEVER)),
+		tap((event: ClipboardEvent) => {
+			event.preventDefault();
+		}),
+		reduceToEmptyString()
+	);
 
 	$: document.body.dataset.theme = $theme$;
 
@@ -89,7 +102,7 @@
 				const addedNode = addedNodes[index] as HTMLElement;
 				// addedNode can become undefined if the element disappears like yomichan
 				if (addedNode?.tagName === 'P') {
-					newLine$.next(addedNode.textContent);
+					newLine$.next([addedNode.textContent, LineType.EXTERNAL]);
 					addedNode.remove();
 				}
 			}
@@ -325,6 +338,24 @@
 		}
 	}
 
+	function handlePreventLastDuplicateBlur(event) {
+		const target = event.target as HTMLInputElement;
+		const value = Number.parseInt(target.value || '0');
+		const wasChange = value !== $preventLastDuplicate$;
+
+		if (!value || value < 0) {
+			$preventLastDuplicate$ = 0;
+		} else {
+			$preventLastDuplicate$ = value;
+		}
+
+		target.value = `${$preventLastDuplicate$}`;
+
+		if (wasChange) {
+			handlePreventLastDuplicateChange();
+		}
+	}
+
 	async function handlePreventLastDuplicateChange() {
 		if (!$preventLastDuplicate$ || $lineData$.length < 2) {
 			return;
@@ -338,12 +369,28 @@
 			};
 		});
 
-		if (!canceled && $lineData$[$lineData$.length - 1].text === $lineData$[$lineData$.length - 2].text) {
-			const [removedLine] = $lineData$.splice($lineData$.length - 1, 1);
-
-			$lineData$ = $lineData$;
-			selectedLineIds = selectedLineIds.filter((selectedLineId) => selectedLineId !== removedLine.id);
+		if (canceled) {
+			return;
 		}
+
+		const nonDuplicateLines: LineItem[] = [];
+		const nonDuplicateLineText = new Set<string>();
+		const removedIds = new Set<string>();
+		const lines = $lineData$.splice(-($preventLastDuplicate$ + 1));
+
+		for (let index = 0, { length } = lines; index < length; index += 1) {
+			const line = lines[index];
+
+			if (nonDuplicateLineText.has(line.text)) {
+				removedIds.add(line.id);
+			} else {
+				nonDuplicateLines.push(line);
+				nonDuplicateLineText.add(line.text);
+			}
+		}
+
+		$lineData$ = [...$lineData$, ...nonDuplicateLines];
+		selectedLineIds = selectedLineIds.filter((selectedLineId) => !removedIds.has(selectedLineId));
 	}
 
 	async function handlePreventGlobalDuplicateChange() {
@@ -404,6 +451,7 @@
 	<title>{$windowTitle$ || 'Texthooker UI'}</title>
 </svelte:head>
 
+{$copyBlocker$ ?? ''}
 {#if settingsOpen}
 	<input class="hidden" type="file" bind:this={fileInput} on:change={handleFileChange} />
 	<div
@@ -509,6 +557,14 @@
 				</option>
 			{/each}
 		</select>
+		<span class="label-text col-span-2">Prevent Last Line Duplicate</span>
+		<input
+			type="number"
+			class="input input-bordered h-8 col-span-2"
+			min="0"
+			value={$preventLastDuplicate$}
+			on:blur={handlePreventLastDuplicateBlur}
+		/>
 		<span class="label-text col-span-2">AFK Timer (s)</span>
 		<input
 			type="number"
@@ -563,19 +619,18 @@
 		/>
 		<span class="label-text">Enable Paste</span>
 		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$enablePaste$} />
-		<span class="label-text">Flash on missed Line</span>
-		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$flashOnMissedLine$} />
+		<span class="label-text">Block Copy from Page</span>
+		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$blockCopyOnPage$} />
+		<span class="label-text">Allow Paste during Pause</span>
+		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$allowPasteDuringPause$} />
 		<span class="label-text">Allow new Line during Pause</span>
 		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$allowNewLineDuringPause$} />
-		<span class="label-text">Autostart Timer during Pause</span>
+		<span class="label-text">Autostart Timer by Paste during Pause</span>
+		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$autoStartTimerDuringPausePaste$} />
+		<span class="label-text">Autostart Timer by Line during Pause</span>
 		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$autoStartTimerDuringPause$} />
-		<span class="label-text">Prevent Last Line Duplicate</span>
-		<input
-			type="checkbox"
-			class="checkbox checkbox-primary ml-2"
-			bind:checked={$preventLastDuplicate$}
-			on:change={handlePreventLastDuplicateChange}
-		/>
+		<span class="label-text">Flash on missed Line</span>
+		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$flashOnMissedLine$} />
 		<span class="label-text">Prevent Global Duplicate</span>
 		<input
 			type="checkbox"
@@ -616,6 +671,8 @@
 		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$showLineCount$} />
 		<span class="label-text">Blur Stats</span>
 		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$blurStats$} />
+		<span class="label-text">Enable Line Animation</span>
+		<input type="checkbox" class="checkbox checkbox-primary ml-2" bind:checked={$enableLineAnimation$} />
 		<span class="label-text" style="grid-column: 1/5;">Custom CSS</span>
 		<textarea
 			class="p-1 min-h-[10rem]"

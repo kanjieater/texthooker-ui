@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import {
 		actionHistory$,
 		displayVertical$,
+		enableLineAnimation$,
 		lineData$,
 		preserveWhitespace$,
 		reverseLineOrder$
 	} from '../stores/stores';
 	import type { LineItem } from '../types';
 	import { dummyFn, newLineCharacter, updateScroll } from '../util';
-	import { fly } from 'svelte/transition';
 
 	export let line: LineItem;
 	export let index: number;
@@ -32,7 +33,13 @@
 
 	onMount(() => {
 		if (isLast) {
-			updateScroll(window, paragraph.parentElement, $reverseLineOrder$, $displayVertical$);
+			updateScroll(
+				window,
+				paragraph.parentElement,
+				$reverseLineOrder$,
+				$displayVertical$,
+				$enableLineAnimation$ ? 'smooth' : 'auto'
+			);
 		}
 	});
 
@@ -102,7 +109,7 @@
 		on:dblclick={handleDblClick}
 		on:keyup={dummyFn}
 		bind:this={paragraph}
-		in:fly="{{x:-100, duration:300}}"
+		in:fly="{{x:-100, duration: $enableLineAnimation$ ? 250 : 0}}"
 	>
 		{line.text}
 	</p>
