@@ -20,6 +20,7 @@
 		allowPasteDuringPause$,
 		autoStartTimerDuringPause$,
 		autoStartTimerDuringPausePaste$,
+		blockCopyOnPage$,
 		dialogOpen$,
 		displayVertical$,
 		enablePaste$,
@@ -55,6 +56,7 @@
 	let lineContainer: HTMLElement;
 	let lineElements: Line[] = [];
 	let lineInEdit = false;
+	let blockNextExternalLine = false;
 	let wakeLock = null;
 
 	const wakeLockAvailable = 'wakeLock' in navigator;
@@ -69,12 +71,18 @@
 		filter(([_, lineType]) => {
 			const isPaste = lineType === LineType.PASTE;
 			const hasNoUserInteraction = !isPaste || (!$notesOpen$ && !$dialogOpen$ && !settingsOpen && !lineInEdit);
+			const skipExternalLine = blockNextExternalLine && lineType === LineType.EXTERNAL;
+
+			if (skipExternalLine) {
+				blockNextExternalLine = false;
+			}
 
 			if (
 				(!$isPaused$ ||
 					(($allowPasteDuringPause$ || $autoStartTimerDuringPausePaste$) && isPaste) ||
 					(($allowNewLineDuringPause$ || $autoStartTimerDuringPause$) && !isPaste)) &&
-				hasNoUserInteraction
+				hasNoUserInteraction &&
+				!skipExternalLine
 			) {
 				if (
 					$isPaused$ &&
@@ -86,7 +94,7 @@
 				return true;
 			}
 
-			if (hasNoUserInteraction && $flashOnMissedLine$) {
+			if (!skipExternalLine && hasNoUserInteraction && $flashOnMissedLine$) {
 				handleMissedLine();
 			}
 
@@ -103,7 +111,7 @@
 		reduceToEmptyString()
 	);
 
-	const pastHandler$ = enablePaste$.pipe(
+	const pasteHandler$ = enablePaste$.pipe(
 		switchMap((enablePaste) => (enablePaste ? fromEvent(document, 'paste') : NEVER)),
 		tap((event: ClipboardEvent) => newLine$.next([event.clipboardData.getData('text/plain'), LineType.PASTE])),
 		reduceToEmptyString()
@@ -123,6 +131,16 @@
 					});
 			}
 		}),
+		reduceToEmptyString()
+	);
+
+	const copyBlocker$ = blockCopyOnPage$.pipe(
+		switchMap((blockCopyOnPage) => {
+			blockNextExternalLine = false;
+
+			return blockCopyOnPage ? fromEvent(document, 'copy') : NEVER;
+		}),
+		tap(() => (blockNextExternalLine = true)),
 		reduceToEmptyString()
 	);
 
@@ -285,7 +303,8 @@
 
 {$visibilityHandler$ ?? ''}
 {$handleLine$ ?? ''}
-{$pastHandler$ ?? ''}
+{$pasteHandler$ ?? ''}
+{$copyBlocker$ ?? ''}
 
 <DialogManager />
 

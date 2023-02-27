@@ -9,7 +9,6 @@
 		mdiWeatherNight,
 		mdiWhiteBalanceSunny
 	} from '@mdi/js';
-	import { fromEvent, NEVER, switchMap, tap } from 'rxjs';
 	import { createEventDispatcher, tick } from 'svelte';
 	import {
 		actionHistory$,
@@ -55,7 +54,7 @@
 	} from '../stores/stores';
 	import { LineType, OnlineFont, Theme, type DialogResult, type LineItem } from '../types';
 	import { clickOutside } from '../use-click-outside';
-	import { dummyFn, reduceToEmptyString, timeStringToSeconds } from '../util';
+	import { dummyFn, timeStringToSeconds } from '../util';
 	import Icon from './Icon.svelte';
 
 	export let selectedLineIds: string[];
@@ -67,14 +66,6 @@
 	const dispatch = createEventDispatcher<{ layoutChange: void }>();
 
 	const onlineFonts = [OnlineFont.OFF, OnlineFont.NOTO, OnlineFont.KLEE, OnlineFont.SHIPPORI];
-
-	const copyBlocker$ = blockCopyOnPage$.pipe(
-		switchMap((blockCopyOnPage) => (blockCopyOnPage ? fromEvent(document, 'copy') : NEVER)),
-		tap((event: ClipboardEvent) => {
-			event.preventDefault();
-		}),
-		reduceToEmptyString()
-	);
 
 	$: document.body.dataset.theme = $theme$;
 
@@ -451,7 +442,6 @@
 	<title>{$windowTitle$ || 'Texthooker UI'}</title>
 </svelte:head>
 
-{$copyBlocker$ ?? ''}
 {#if settingsOpen}
 	<input class="hidden" type="file" bind:this={fileInput} on:change={handleFileChange} />
 	<div
